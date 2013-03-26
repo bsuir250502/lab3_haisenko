@@ -1,19 +1,19 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#define stringSize 30
 
-const int stringSize = 30;
+/*const int stringSize = 30;*/
 
 struct cars_t {
-    char *number;
-    struct cars_t *next;
+    char number[stringSize];
+    /*struct cars_t *next;*/
     struct cars_t *prev;
 };
 
 struct parking_t {
     int size;
     int carsNum;
-    int pendingNum;
     struct cars_t *car;
     struct cars_t *pending;
     struct parking_t *next;
@@ -21,26 +21,24 @@ struct parking_t {
 
 void checkKeys(char **argv);
 int inputNumericalData();
-char *inputStringData();
+void inputStringData(char *string);
 
-int addParcking(struct parking_t *parking, int lastParking);
-struct cars_t *createcarsList(int size);
-struct parking_t *gotoParking(struct parking_t *parking, int parkingNum);
+void addParcking(struct parking_t *parking, int lastParking);
 void moveCar(struct parking_t *parking, int lastParking);
-void addCar(struct parking_t *parking, int parkingNum);
+void addCar(struct parking_t *parking);
 void addPending(struct parking_t *parking, char *number);
-void removeCar(struct parking_t *parking, int parkingNum);
+void removeCar(struct parking_t *parking);
 char *removePending(struct parking_t *parking);
-void showAllParkings(struct parking_t *parking, int lastParking);
-void freeAll(struct parking_t *parking, int lastParking);
+void showAllParkings(struct parking_t *parking);
+void freeAll(struct parking_t *parking);
 
 int main(int argc, char **argv)
 {
     checkKeys(argv);
-    struct parking_t *parking;
-    parking = (struct parking_t *) calloc(1, sizeof(struct parking_t));
     int lastParking = -1;
     char command[stringSize];
+    struct parking_t *parking;
+    parking = (struct parking_t *) calloc(1, sizeof(struct parking_t));
     while (1) {
         printf("\nEnter command:\n");
         printf("    1 - Add parking\n");
@@ -50,16 +48,16 @@ int main(int argc, char **argv)
         fgets(command, stringSize, stdin);
         switch (command[0]) {
         case '1':
-            lastParking = addParcking(parking, lastParking);
+            addParcking(parking, ++lastParking);
             break;
         case '2':
             moveCar(parking, lastParking);
             break;
         case '3':
-            showAllParkings(parking, lastParking);
+            showAllParkings(parking);
             break;
         case '4':
-            freeAll(parking, lastParking);
+            freeAll(parking);
             return 0;
         default:
             printf("Wrong command. Try again\n");
@@ -69,49 +67,17 @@ int main(int argc, char **argv)
     return 0;
 }
 
-int addParcking(struct parking_t *parking, int lastParking)
+void addParcking(struct parking_t *parking, int lastParking)
 {
-    struct parking_t *temp;
-    if (lastParking == -1) {
-        temp = parking;
-    } else {
-        temp = (struct parking_t *) calloc(1 ,sizeof(struct parking_t));
-        parking = gotoParking(parking, lastParking);
-        parking->next = temp;
-    }
-    lastParking++;
-    printf("Enter the maximum number of cars in the parking: ");
-    temp->size = inputNumericalData();
-    temp->carsNum = 0;
-    temp->car = createcarsList(temp->size);
-    printf("Parking #%d created.\n", lastParking + 1);
-    return lastParking;
-}
-
-struct parking_t *gotoParking(struct parking_t *parking, int parkingNum)
-{
-    int i;
-    for (i = 0; i < parkingNum; i++){
+    while (parking->next) {
         parking = parking->next;
     }
-    return parking;
-}
-
-struct cars_t *createcarsList(int size)
-{
-    int i;
-    struct cars_t *car, *temp, *startPoint;
-    car = (struct cars_t *) calloc(1, sizeof(struct cars_t));
-    startPoint = car;
-    for (i = 1; i < size; i++) {
-        temp = (struct cars_t *) calloc(1, sizeof(struct cars_t));
-        car->next = temp;
-        temp->prev = car;
-        car = temp;
-    }
-    car->next = startPoint;
-    startPoint->prev = car;
-    return startPoint;
+    parking->next = (struct parking_t *) calloc(1, sizeof(struct parking_t));
+    parking = parking->next;
+    printf("Enter the maximum number of cars in the parking: ");
+    parking->size = inputNumericalData();
+    /*parking->carsNum = 0;*/
+    printf("Parking #%d created.\n", lastParking + 1);
 }
 
 void moveCar(struct parking_t *parking, int lastParking)
@@ -131,16 +97,18 @@ void moveCar(struct parking_t *parking, int lastParking)
         }
         break;
     } while (1);
-    parking = gotoParking(parking, parkingNum);
+    while (parkingNum--) {
+        parking = parking->next;
+    }
     do {
         printf("+ to add car, - to remove car: ");
         fgets(command, stringSize, stdin);
         switch (command[0]) {
         case '+':
-            addCar(parking, parkingNum);
+            addCar(parking);
             return;
         case '-':
-            removeCar(parking, parkingNum);
+            removeCar(parking);
             return;
         default:
             break;
@@ -148,54 +116,46 @@ void moveCar(struct parking_t *parking, int lastParking)
     } while (1);
 }
 
-void addCar(struct parking_t *parking, int parkingNum)
+void addCar(struct parking_t *parking)
 {
-    char *temp;
+    struct cars_t *tempCar;
     printf("Enter car number: ");
-    temp = inputStringData();
+    tempCar = (struct cars_t *) calloc(sizeof(struct cars_t));
+    inputStringData(tempCar->number);
+
     if (parking->carsNum == parking->size) {
-        printf("Parking #%d is full.\n", parkingNum  + 1);
-        addPending(parking, temp);
+        addPending(parking, tempCar);
         return;
     }
-    parking->car = parking->car->next;
-    parking->car->number = temp;
+    tempCar->prev = parking->car;
+    parking->car = tempCar;
     parking->carsNum++;
-    printf("Car '%s' added to parking #%d\n", parking->car->number, parkingNum + 1);
+    printf("Car '%s' added to parking\n", parking->car->number);
 }
 
-void addPending(struct parking_t *parking, char *number)
+void addPending(struct parking_t *parking, struct cars_t *tempCar)
 {
-    struct cars_t *temp;
-    temp = (struct cars_t *) malloc(sizeof(struct cars_t));
-    if (!parking->pendingNum) {
-        parking->pending = temp;
-    }
-    else {
-        parking->pending->next = temp;
-        temp->prev = parking->pending;
-        parking->pending = temp;
-    }
-    parking->pending->number = number;
-    parking->pendingNum++;
+    tempCar->prev = parking->pending;
+    parking->pending = tempCar;
+    printf("Parking is full.\n");
     printf("Car '%s' will wait for parking place.\n", parking->pending->number);
 }
 
-void removeCar(struct parking_t *parking, int parkingNum)
+void removeCar(struct parking_t *parking)
 {
-    if (parking->carsNum == 0) {
+    if (!parking->car) {
         printf("There are no cars in this parking.\n");
         return;
     }
-    printf("Car '%s' removed from parking #%d.\n", parking->car->number, parkingNum + 1);
+    parking->car = parking->car->prev;
+    free(parking->car);
+    printf("Car '%s' removed from parking.\n", parking->car->number);
     if (parking->pendingNum) {
-        free(parking->car->number);
-        parking->car->number = removePending(parking);
+        parking->car = removePending(parking);
+        //! pending prev to car
         printf("Car '%s' added from the pending queue.\n", parking->car->number);
     }
     else {
-        free(parking->car->number);
-        parking->car = parking->car->prev;
         parking->carsNum--;
     }
 }
@@ -266,24 +226,21 @@ int inputNumericalData()
     return num;
 }
 
-char *inputStringData()
+void inputStringData(char *string)
 {
-    char *buffer;
-    buffer = (char *) malloc(stringSize * sizeof(char));
     do {
-        fgets(buffer, stringSize, stdin);
-        if (buffer[0] == ' ') {
+        fgets(string, stringSize, stdin);
+        if (string[0] == ' ') {
             printf("The number can not start with a space. Try again: ");
             continue;
         }
-        if (buffer[0] == '\n') {
+        if (string[0] == '\n') {
             printf("You did not enter a number. Try again: ");
             continue;
         }
         break;
     } while (1);
-    buffer[strlen(buffer) - 1] = '\0';
-    return buffer;
+    string[strlen(string) - 1] = '\0';
 }
 
 void checkKeys(char **argv)
