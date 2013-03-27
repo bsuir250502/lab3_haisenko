@@ -3,11 +3,8 @@
 #include <stdlib.h>
 #define stringSize 30
 
-/*const int stringSize = 30;*/
-
 struct cars_t {
     char number[stringSize];
-    /*struct cars_t *next;*/
     struct cars_t *prev;
 };
 
@@ -15,7 +12,7 @@ struct parking_t {
     int size;
     int carsNum;
     struct cars_t *car;
-    struct cars_t *pending;
+    struct cars_t *pending;     /*maybe begin and end and new structure? */
     struct parking_t *next;
 };
 
@@ -23,13 +20,13 @@ void checkKeys(char **argv);
 int inputNumericalData();
 void inputStringData(char *string);
 
-void addParcking(struct parking_t *parking, int lastParking);
+void addParcking(struct parking_t *parking, int *lastParking);
 void moveCar(struct parking_t *parking, int lastParking);
 void addCar(struct parking_t *parking);
-void addPending(struct parking_t *parking, char *number);
+void addPending(struct parking_t *parking, struct cars_t *tempCar);
 void removeCar(struct parking_t *parking);
-char *removePending(struct parking_t *parking);
-void showAllParkings(struct parking_t *parking);
+void removePending(struct parking_t *parking);
+void showAllParkings(struct parking_t *parking, int lastParking);
 void freeAll(struct parking_t *parking);
 
 int main(int argc, char **argv)
@@ -48,13 +45,13 @@ int main(int argc, char **argv)
         fgets(command, stringSize, stdin);
         switch (command[0]) {
         case '1':
-            addParcking(parking, ++lastParking);
+            addParcking(parking, &lastParking);
             break;
         case '2':
             moveCar(parking, lastParking);
             break;
         case '3':
-            showAllParkings(parking);
+            showAllParkings(parking, lastParking);
             break;
         case '4':
             freeAll(parking);
@@ -67,17 +64,19 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void addParcking(struct parking_t *parking, int lastParking)
+void addParcking(struct parking_t *parking, int *lastParking)
 {
-    while (parking->next) {
+    if (*lastParking != -1) {
+        while (parking->next) {
+            parking = parking->next;
+        }
+        parking->next = (struct parking_t *) calloc(1, sizeof(struct parking_t));
         parking = parking->next;
     }
-    parking->next = (struct parking_t *) calloc(1, sizeof(struct parking_t));
-    parking = parking->next;
+    (*lastParking)++;
     printf("Enter the maximum number of cars in the parking: ");
     parking->size = inputNumericalData();
-    /*parking->carsNum = 0;*/
-    printf("Parking #%d created.\n", lastParking + 1);
+    printf("Parking #%d created.\n", *lastParking + 1);
 }
 
 void moveCar(struct parking_t *parking, int lastParking)
@@ -120,9 +119,8 @@ void addCar(struct parking_t *parking)
 {
     struct cars_t *tempCar;
     printf("Enter car number: ");
-    tempCar = (struct cars_t *) calloc(sizeof(struct cars_t));
+    tempCar = (struct cars_t *) calloc(1, sizeof(struct cars_t));
     inputStringData(tempCar->number);
-
     if (parking->carsNum == parking->size) {
         addPending(parking, tempCar);
         return;
@@ -143,63 +141,77 @@ void addPending(struct parking_t *parking, struct cars_t *tempCar)
 
 void removeCar(struct parking_t *parking)
 {
+    struct cars_t *temp;
     if (!parking->car) {
         printf("There are no cars in this parking.\n");
         return;
     }
-    parking->car = parking->car->prev;
-    free(parking->car);
     printf("Car '%s' removed from parking.\n", parking->car->number);
-    if (parking->pendingNum) {
-        parking->car = removePending(parking);
-        //! pending prev to car
+    temp = parking->car;
+    parking->car = parking->car->prev;
+    free(temp);
+    if (parking->pending) {
+        removePending(parking);
         printf("Car '%s' added from the pending queue.\n", parking->car->number);
-    }
-    else {
+    } else {
         parking->carsNum--;
     }
 }
 
-char *removePending(struct parking_t *parking)
+void removePending(struct parking_t *parking)
 {
-    int i;
-    char *temp;
-    struct cars_t *first;
+    struct cars_t *first, *preFirst;
     first = parking->pending;
-    for (i = 1; i < parking->pendingNum; i++) {
+    preFirst = first;
+    if (!first->prev) {
+        parking->pending = NULL;
+    }
+    while (first->prev) {
+        preFirst = first;
         first = first->prev;
     }
-    temp = first->number;
-    free(first);
-    parking->pendingNum--;
-    return temp;
+    preFirst->prev = NULL;
+    first->prev = parking->car;
+    parking->car = first;
 }
 
 void showAllParkings(struct parking_t *parking, int lastParking)
 {
-    return;
+    int i;
+    struct parking_t *tempParking;
+    tempParking = parking;
+    for (i = 0; i <= lastParking; i++) {
+        printf("---------------");
+    }
+    printf("-\n");
+    printf("| ");
+    for (i = 1; tempParking; i++) {
+        printf("Parking #%3d | ", i);
+        tempParking = tempParking->next;
+    }
+    printf("\n");
+    for (i = 0; i <= lastParking; i++) {
+        printf("|  Cars:       ");
+    }
+    printf("|\n");
+
+    for (i = 0; i <= lastParking; i++) {
+        printf("|--------------");
+    }
+    printf("|\n");
 }
 
-void freeAll(struct parking_t *parking, int lastParking)
+void freeAll(struct parking_t *parking)
 {
-    int i, j;
     struct parking_t *tempParking;
     struct cars_t *tempCar;
-    for (i = 0; i <= lastParking; i++) {
-        for (j = 0; j < parking->carsNum; j++) {
-            printf("%s\n", parking->car->number);
-            free(parking->car->number);
+    while (parking) {
+        while (parking->car) {
             tempCar = parking->car;
-            parking->car = parking->car->next;
+            parking->car = parking->car->prev;
             free(tempCar);
         }
-        for (; j < parking->size; j++) {
-            tempCar = parking->car;
-            parking->car = parking->car->next;
-            free(tempCar);
-        }
-        for (j = 0; j < parking->pendingNum; j++) {
-            free(parking->pending->number);
+        while (parking->pending) {
             tempCar = parking->pending;
             parking->pending = parking->pending->prev;
             free(tempCar);
@@ -209,7 +221,7 @@ void freeAll(struct parking_t *parking, int lastParking)
         free(tempParking);
     }
 }
- 
+
 int inputNumericalData()
 {
     char buffer[stringSize];
