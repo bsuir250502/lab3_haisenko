@@ -178,27 +178,40 @@ void removePending(struct parking_t *parking)
 void showAllParkings(struct parking_t *parking, int lastParking)
 {
     int i;
-    struct parking_t *tempParking;
-    tempParking = parking;
-    for (i = 0; i <= lastParking; i++) {
-        printf("---------------");
+    struct cars_t *tempCar;
+    if (lastParking == -1) {
+        printf("Nothing is entered.\n");
+        return;
     }
-    printf("-\n");
-    printf("| ");
-    for (i = 1; tempParking; i++) {
-        printf("Parking #%3d | ", i);
-        tempParking = tempParking->next;
+    printf("============================================================\n");
+    for (i = 1;; i++) {
+        printf("|| Parking #%d | ", i);
+        printf("Cars: ");
+        tempCar = parking->car;
+        while (tempCar) {
+            printf("%s ", tempCar->number);
+            tempCar = tempCar->prev;
+        }
+        printf("\n");
+        if (parking->size == parking->carsNum) {
+            printf("||  (full)    | Pending cars: ");
+        } else {
+            printf("||            | Pending cars: ");
+        }
+        tempCar = parking->pending;
+        while (tempCar) {
+            printf("%s ", tempCar->number);
+            tempCar = tempCar->prev;
+        }
+        printf("\n");
+        parking = parking->next;
+        if (parking) {
+            printf("||-------------------------------------------------------\n");
+        } else {
+            printf("============================================================\n");
+            break;
+        }
     }
-    printf("\n");
-    for (i = 0; i <= lastParking; i++) {
-        printf("|  Cars:       ");
-    }
-    printf("|\n");
-
-    for (i = 0; i <= lastParking; i++) {
-        printf("|--------------");
-    }
-    printf("|\n");
 }
 
 void freeAll(struct parking_t *parking)
