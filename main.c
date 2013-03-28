@@ -276,6 +276,21 @@ void checkKeys(char **argv)
     if (!strcmp(argv[1], "-h")) {
         printf("================================================================================\n");
         printf("                                     MANUAL:\n\n");
+        printf("    Commands: 1 2 3 4\n\n");
+        printf("1 - Add parking \n");
+        printf("    Enter maximum number of cars. Command will created new parking.\n\n");
+        printf("2 - Move cars\n");
+        printf("    1) + to add new car:\n");
+        printf("        Car with entered numer will added to parking.\n");
+        printf("        Number should not be empty string or started with spaces.\n");
+        printf("        If parking is full, car will added to pending queue.\n");
+        printf("    2) - to remove last car:\n");
+        printf("        Last entered car will be removed.\n");
+        printf("        If there is a waiting queue, a car will added to parking out of it.\n\n");
+        printf("3 - Output\n");
+        printf("    Displays all parkings and cars.\n");
+        printf("4 - Exit\n");
+        printf("    Close the program.\n");
         printf("================================================================================\n");
         exit(0);
     }
